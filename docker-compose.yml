@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # FastAPI REST API Server
+  vqa-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vqa-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./saved:/app/saved
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: >
+      python api.py
+      -c config/config_vit_bert.json
+      -r saved/models/model_best.pth
+      --host 0.0.0.0
+      --port 8000
+
+  # Gradio Web UI
+  vqa-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vqa-ui
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./data:/app/data
+      - ./saved:/app/saved
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+      - GRADIO_SERVER_NAME=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    command: >
+      python app.py
+      -c config/config_vit_bert.json
+      -r saved/models/model_best.pth
+      --port 7860

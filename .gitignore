@@ -1,0 +1,9 @@
+__MACOSX
+__pycache__/
+.DS_Store
+
+saved/
+data/
+notebooks/
+*.zip
+.env
